@@ -19,7 +19,7 @@ class ConMan(object):
         ConMan works with multiple file formats and will try all of them
         until one succeeds or all of them fail.
         """
-        self._conf = None
+        self._conf = {}
         self._environment_override = environment_override
         for config_file in config_files:
             self.add_config_file(config_file)
@@ -87,10 +87,10 @@ class ConMan(object):
                 section[name] = value
 
     def _process_json_file(self, filename):
-        self._conf = json.loads(filename)
+        self._conf.update(json.load(open(filename)))
 
     def _process_yaml_file(self, filename):
-        self._conf = yaml.loads(filename)
+        self._conf.update(yaml.load(open(filename)))
 
 
 
