@@ -16,28 +16,34 @@ def _make_config_file(file_type, content):
     return f.name
 
 
-def _make_ini_file(valid):
+def _make_ini_file(valid, extension=None):
     valid_text = '[ini_conf]\nkey = value\n'
     invalid_text = 'vdgdfhf bt'
 
     content = valid_text if valid else invalid_text
-    return _make_config_file('.ini', content)
+    file_type = extension if extension else '.ini'
+    return _make_config_file(file_type, content)
 
 
-def _make_json_file(valid):
+
+def _make_json_file(valid, extension=None):
     valid_text = json.dumps(dict(json_conf=dict(key='value')))
     invalid_text = 'vdgdfhf bt'
 
     content = valid_text if valid else invalid_text
-    return _make_config_file('.json', content)
+    file_type = extension if extension else '.json'
+    return _make_config_file(file_type, content)
 
 
-def _make_yaml_file(valid):
+
+def _make_yaml_file(valid, extension=None):
     valid_text = yaml.dump(dict(yaml_conf=dict(key='value')))
     invalid_text = 'vdgdfhf bt'
 
     content = valid_text if valid else invalid_text
-    return _make_config_file('.yaml', content)
+
+    file_type = extension if extension else '.yaml'
+    return _make_config_file(file_type, content)
 
 
 class ConmanTest(TestCase):
@@ -46,7 +52,7 @@ class ConmanTest(TestCase):
         cls._good_files = {}
         cls._good_files['ini'] = _make_ini_file(True)
         cls._good_files['json'] = _make_json_file(True)
-        cls._good_files['yaml'] = _make_yaml_file(True)
+        cls._good_files['yaml'] = _make_yaml_file(True, extension='txt')
 
         cls._bad_files = {}
         cls._bad_files['ini'] = _make_ini_file(False)
@@ -70,7 +76,7 @@ class ConmanTest(TestCase):
         self.assertEqual('yaml', f('x.yml'))
         self.assertEqual('yaml', f('x.yaml'))
         self.assertEqual('ini', f('x.ini'))
-        self.assertRaises(Exception, f, 'x.no_such_ext')
+        self.assertIsNone(f('x.no_such_ext'))
 
     def test_init_no_files(self):
         self.assertItemsEqual({}, self.conman._conf)
@@ -83,16 +89,39 @@ class ConmanTest(TestCase):
         self.assertDictEqual(expected, c._conf)
 
     def test_init_some_bad_files(self):
-        pass
+        some_bad_files = self._good_files.values() + self._bad_files.values()
+        self.assertRaises(Exception, ConMan, some_bad_files)
 
     def test_add_config_file_simple_with_file_type(self):
-        pass
+        c = self.conman
+        c.add_config_file(self._good_files['ini'], file_type='ini')
+        expected = dict(ini_conf=dict(key='value'))
+        self.assertDictEqual(expected, c._conf)
 
     def test_add_config_file_simple_guess_file_type(self):
-        pass
+        c = self.conman
+        c.add_config_file(self._good_files['ini'])
+        expected = dict(ini_conf=dict(key='value'))
+        self.assertDictEqual(expected, c._conf)
+
+    def test_add_config_file_simple_wrong_file_type(self):
+        c = self.conman
+        c.add_config_file(self._good_files['ini'], file_type='json')
+        expected = dict(ini_conf=dict(key='value'))
+        self.assertDictEqual(expected, c._conf)
+
+    def test_add_config_file_simple_unknown_wrong_file_type(self):
+        c = self.conman
+        c.add_config_file(self._good_files['ini'], file_type='asdf')
+        expected = dict(ini_conf=dict(key='value'))
+        self.assertDictEqual(expected, c._conf)
 
     def test_add_config_file_environment_override(self):
-        pass
+        os.environ['yaml_conf.key'] = 'env_value'
+        c = ConMan(environment_override=True)
+        c.add_config_file(self._good_files['yaml'])
+        expected = dict(yaml_conf=dict(key='env_value'))
+        self.assertDictEqual(expected, c._conf)
 
     def test_add_config_file_command_line_override(self):
         pass

@@ -1,4 +1,5 @@
 import argparse
+import copy
 import json
 import os
 from ConfigParser import SafeConfigParser
@@ -23,6 +24,27 @@ class ConMan(object):
         self._environment_override = environment_override
         for config_file in config_files:
             self.add_config_file(config_file)
+
+    def _process_file(self, filename, file_type):
+        process_func = getattr(self, '_process_%s_file' % file_type)
+        process_func(filename)
+        if self._environment_override:
+            for name in os.environ.keys():
+                # Break env variable name to components (dot separated)
+                components = name.split('.')
+                conf = self._conf
+                try:
+                    for component in components[:-1]:
+                        conf = conf[component]
+
+                    key = components[-1]
+                    # Check if the last component is in the configuration
+                    if key in conf:
+                        value_type = type(conf[key])
+                        # Finally assign typed environment value to real conf
+                        conf[key] = value_type(os.environ[name])
+                except:
+                    pass
 
     def add_config_file(self,
                         filename,
@@ -58,24 +80,38 @@ class ConMan(object):
         if not file_type:
             file_type = self._guess_file_type(filename)
 
-        process_func = getattr(self, '_process_%s_file' % file_type)
-        process_func(filename)
+        file_types = set('ini json yaml'.split())
+        if file_type:
+            try:
+                return self._process_file(filename, file_type)
+            except:
+                # Remove failed file_type from set of file types to try
+                if file_type in file_types:
+                    file_types.remove(file_type)
+
+        # If no file type can be guessed or guess failed try all parsers
+        for file_type in file_types:
+            try:
+                return self._process_file(filename, file_type)
+            except:
+                pass
+
+        raise Exception('Bad config file: ' + filename)
 
     def _guess_file_type(self, filename):
         """Guess the file type based on its extension
 
         :param str filename: the config filename
-        :returns: the file type of the config file
+        :returns: the file type of the config file or None
 
         The extension is extracted and matched against known extensions.
-        If the extension matches no known file type an exception is raised.
-
+        If the extension matches no known file type return None
         """
         ext = os.path.splitext(filename)[1][1:]
         return dict(yml='yaml',
                     yaml='yaml',
                     json='json',
-                    ini='ini')[ext]
+                    ini='ini').get(ext, None)
 
     def _process_ini_file(self, filename):
         parser = SafeConfigParser()
