@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import yaml
 import tempfile
 from unittest import TestCase
@@ -25,7 +26,6 @@ def _make_ini_file(valid, extension=None):
     return _make_config_file(file_type, content)
 
 
-
 def _make_json_file(valid, extension=None):
     valid_text = json.dumps(dict(json_conf=dict(key='value')))
     invalid_text = 'vdgdfhf bt'
@@ -35,9 +35,10 @@ def _make_json_file(valid, extension=None):
     return _make_config_file(file_type, content)
 
 
-
 def _make_yaml_file(valid, extension=None):
-    valid_text = yaml.dump(dict(yaml_conf=dict(key='value')))
+    valid_text = yaml.dump(dict(
+        root_key='root_value',
+        yaml_conf=dict(key='value')))
     invalid_text = 'vdgdfhf bt'
 
     content = valid_text if valid else invalid_text
@@ -52,7 +53,7 @@ class ConmanTest(TestCase):
         cls._good_files = {}
         cls._good_files['ini'] = _make_ini_file(True)
         cls._good_files['json'] = _make_json_file(True)
-        cls._good_files['yaml'] = _make_yaml_file(True, extension='txt')
+        cls._good_files['yaml'] = _make_yaml_file(True, extension='.txt')
 
         cls._bad_files = {}
         cls._bad_files['ini'] = _make_ini_file(False)
@@ -83,7 +84,8 @@ class ConmanTest(TestCase):
 
     def test_init_some_good_files(self):
         c = ConMan(self._good_files.values())
-        expected = dict(json_conf=dict(key='value'),
+        expected = dict(root_key='root_value',
+                        json_conf=dict(key='value'),
                         yaml_conf=dict(key='value'),
                         ini_conf=dict(key='value'))
         self.assertDictEqual(expected, c._conf)
@@ -116,30 +118,19 @@ class ConmanTest(TestCase):
         expected = dict(ini_conf=dict(key='value'))
         self.assertDictEqual(expected, c._conf)
 
-    def test_add_config_file_environment_override(self):
-        os.environ['yaml_conf.key'] = 'env_value'
-        c = ConMan(environment_override=True)
-        c.add_config_file(self._good_files['yaml'])
-        expected = dict(yaml_conf=dict(key='env_value'))
+    def test_add_config_file_from_env_var(self):
+        os.environ['good_config'] = self._good_files['yaml']
+        c = ConMan()
+        c.add_config_file(env_variable='good_config')
+        expected = dict(root_key='root_value',
+                        yaml_conf=dict(key='value'))
         self.assertDictEqual(expected, c._conf)
 
-    def test_add_config_file_command_line_override(self):
-        pass
+    def test_add_config_file_with_base_dir(self):
+        filename = self._good_files['json']
+        base_dir, base_name = os.path.split(filename)
+        c = ConMan()
+        c.add_config_file(filename=base_name, base_dir=base_dir)
+        expected = dict(json_conf=dict(key='value'))
+        self.assertDictEqual(expected, c._conf)
 
-    def test_add_config_file_command_line_bad_file_type(self):
-        pass
-
-    def test_add_config_file_command_line_bad_extension(self):
-        pass
-
-    def test_add_config_file_command_line_bad_environment_override(self):
-        pass
-
-    def test_add_config_file_command_line_bad_commandline_override(self):
-        pass
-
-    def test_environment_variable_override(self):
-        pass
-
-    def test_command_line_override(self):
-        pass

@@ -1,18 +1,18 @@
-import argparse
-import copy
 import json
 import os
 from ConfigParser import SafeConfigParser
 import yaml
 
 
+FILE_TYPES = 'ini json yaml'.split()
+
+
 class ConMan(object):
-    def __init__(self, config_files=(), environment_override=False):
+    def __init__(self, config_files=()):
         """Initialize with config files
 
-        :param iterable config_files: a list of config file names
-        :param bool environment_override: can environment variable override
-                                          named values from the config files?
+        :param iterable config_files: a list of config file names or
+            environment variables that contain file names.
 
         You may choose not to initialize with any config files and add
         them later using add_config_file(), which is more sophisticated.
@@ -21,66 +21,59 @@ class ConMan(object):
         until one succeeds or all of them fail.
         """
         self._conf = {}
-        self._environment_override = environment_override
         for config_file in config_files:
             self.add_config_file(config_file)
 
     def _process_file(self, filename, file_type):
         process_func = getattr(self, '_process_%s_file' % file_type)
         process_func(filename)
-        if self._environment_override:
-            for name in os.environ.keys():
-                # Break env variable name to components (dot separated)
-                components = name.split('.')
-                conf = self._conf
-                try:
-                    for component in components[:-1]:
-                        conf = conf[component]
-
-                    key = components[-1]
-                    # Check if the last component is in the configuration
-                    if key in conf:
-                        value_type = type(conf[key])
-                        # Finally assign typed environment value to real conf
-                        conf[key] = value_type(os.environ[name])
-                except:
-                    pass
 
     def add_config_file(self,
-                        filename,
+                        filename=None,
                         env_variable=None,
-                        command_line_argument=None,
+                        base_dir=None,
                         file_type=None):
         """Add a configuration file
 
-        :param str filename: absolute or relative path
+        :param str filename: absolute or relative path to a config file
+        :param str env_variable: env var that contains a config filename
         :param str base_dir: join with filename if not None
         :param str env_variable: if not None contains filename
-        :param str command_line_argument: if not None contains filename
         :param str file_type: valid values are- 'yaml', 'json', 'ini'
 
-        There are many ways to tell ConMan about a configuration and there is
-        a search path with options to override. Here are the rules:
+        There are many ways to tell ConMan about a configuration.
+        Here are the rules:
 
-        The filename contains the path to the config file. It may be
-        overridden by an environment variable if provided, which can be
-        overridden by a command line argument. If a file type is provided
-        it is used to determine how to parse the config file. If no file type
-        is provided ConMan will try to guess by the extension.
+        The filename contains the path to the config file. The filename may
+        also be read from an environment variable. Either filename is not None
+        or environment_Variable are not None, but not both.
+
+        If base_dir is not None then it will combined with the config filename
+        to create an absolute path.
+
+        If a file type is provided it is used to determine how to parse the
+        config file. If no file type is provided ConMan will try to guess by
+        the extension.
         """
-        if env_variable:
-            filename = os.getenv(env_variable, filename)
+        if filename is None and env_variable is None:
+            raise Exception('filename and env_variable are both None')
 
-        if command_line_argument:
-            parser = argparse.ArgumentParser()
-            parser.add_argument(command_line_argument, dest='filename')
-            args = parser.parse_known_args()
-            filename = args.filename
+        if filename is not None and env_variable is not None:
+            raise Exception('filename and env_variable are both not None')
+
+        if env_variable:
+            filename = os.environ[env_variable]
+
+        if base_dir:
+            filename = os.path.join(base_dir, filename)
+
+        if not os.path.isfile(filename):
+            raise Exception('No such file: ' + filename)
 
         if not file_type:
             file_type = self._guess_file_type(filename)
 
-        file_types = set('ini json yaml'.split())
+        file_types = set(FILE_TYPES)
         if file_type:
             try:
                 return self._process_file(filename, file_type)
@@ -127,9 +120,3 @@ class ConMan(object):
 
     def _process_yaml_file(self, filename):
         self._conf.update(yaml.load(open(filename)))
-
-
-
-
-
-
