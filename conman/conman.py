@@ -1,6 +1,9 @@
 import json
 import os
-from ConfigParser import SafeConfigParser
+try:
+    from ConfigParser import SafeConfigParser
+except ImportError:
+    from configparser import SafeConfigParser
 import yaml
 
 

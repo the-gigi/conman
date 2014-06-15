@@ -11,7 +11,7 @@ def _make_config_file(file_type, content):
     # create temp filename
     f = tempfile.NamedTemporaryFile(suffix=file_type, delete=False)
     # write content
-    f.write(content)
+    f.write(content.encode('utf-8'))
 
     # return filename
     return f.name
@@ -60,9 +60,12 @@ class ConmanTest(TestCase):
         cls._bad_files['json'] = _make_json_file(False)
         cls._bad_files['yaml'] = _make_yaml_file(False)
 
+        cls._all_files = list(cls._good_files.values()) + \
+                         list(cls._bad_files.values())
+
     @classmethod
     def tearDownClass(cls):
-        for f in cls._good_files.values() + cls._bad_files.values():
+        for f in cls._all_files:
             os.remove(f)
 
     def setUp(self):
@@ -80,7 +83,7 @@ class ConmanTest(TestCase):
         self.assertIsNone(f('x.no_such_ext'))
 
     def test_init_no_files(self):
-        self.assertItemsEqual({}, self.conman._conf)
+        self.assertDictEqual({}, self.conman._conf)
 
     def test_init_some_good_files(self):
         c = ConMan(self._good_files.values())
@@ -91,7 +94,7 @@ class ConmanTest(TestCase):
         self.assertDictEqual(expected, c._conf)
 
     def test_init_some_bad_files(self):
-        some_bad_files = self._good_files.values() + self._bad_files.values()
+        some_bad_files = self._all_files
         self.assertRaises(Exception, ConMan, some_bad_files)
 
     def test_add_config_file_simple_with_file_type(self):
