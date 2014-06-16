@@ -4,7 +4,7 @@ import sys
 import yaml
 import tempfile
 from unittest import TestCase
-from conman.conman import ConMan
+from conman.conman_file import ConManFile
 
 
 def _make_config_file(file_type, content):
@@ -47,7 +47,7 @@ def _make_yaml_file(valid, extension=None):
     return _make_config_file(file_type, content)
 
 
-class ConmanTest(TestCase):
+class ConmanFileTest(TestCase):
     @classmethod
     def setUpClass(cls):
         cls._good_files = {}
@@ -69,7 +69,7 @@ class ConmanTest(TestCase):
             os.remove(f)
 
     def setUp(self):
-        self.conman = ConMan()
+        self.conman = ConManFile()
 
     def tearDown(self):
         pass
@@ -86,7 +86,7 @@ class ConmanTest(TestCase):
         self.assertDictEqual({}, self.conman._conf)
 
     def test_init_some_good_files(self):
-        c = ConMan(self._good_files.values())
+        c = ConManFile(self._good_files.values())
         expected = dict(root_key='root_value',
                         json_conf=dict(key='value'),
                         yaml_conf=dict(key='value'),
@@ -95,7 +95,7 @@ class ConmanTest(TestCase):
 
     def test_init_some_bad_files(self):
         some_bad_files = self._all_files
-        self.assertRaises(Exception, ConMan, some_bad_files)
+        self.assertRaises(Exception, ConManFile, some_bad_files)
 
     def test_add_config_file_simple_with_file_type(self):
         c = self.conman
@@ -123,7 +123,7 @@ class ConmanTest(TestCase):
 
     def test_add_config_file_from_env_var(self):
         os.environ['good_config'] = self._good_files['yaml']
-        c = ConMan()
+        c = ConManFile()
         c.add_config_file(env_variable='good_config')
         expected = dict(root_key='root_value',
                         yaml_conf=dict(key='value'))
@@ -132,7 +132,7 @@ class ConmanTest(TestCase):
     def test_add_config_file_with_base_dir(self):
         filename = self._good_files['json']
         base_dir, base_name = os.path.split(filename)
-        c = ConMan()
+        c = ConManFile()
         c.add_config_file(filename=base_name, base_dir=base_dir)
         expected = dict(json_conf=dict(key='value'))
         self.assertDictEqual(expected, c._conf)

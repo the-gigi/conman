@@ -10,7 +10,7 @@ import yaml
 FILE_TYPES = 'ini json yaml'.split()
 
 
-class ConMan(object):
+class ConManFile(object):
     def __init__(self, config_files=()):
         """Initialize with config files
 
