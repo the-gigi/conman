@@ -27,6 +27,8 @@ class ConManFile(object):
         for config_file in config_files:
             self.add_config_file(config_file)
 
+        self.config_files = []
+
     def _process_file(self, filename, file_type):
         process_func = getattr(self, '_process_%s_file' % file_type)
         process_func(filename)
@@ -63,6 +65,9 @@ class ConManFile(object):
 
         if filename is not None and env_variable is not None:
             raise Exception('filename and env_variable are both not None')
+
+        if filename in self.config_files:
+            raise Exception('filename is already in the config file list')
 
         if env_variable:
             filename = os.environ[env_variable]
