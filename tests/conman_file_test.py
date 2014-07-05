@@ -1,6 +1,5 @@
 import json
 import os
-import sys
 import yaml
 import tempfile
 from unittest import TestCase

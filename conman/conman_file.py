@@ -23,11 +23,10 @@ class ConManFile(object):
         ConMan works with multiple file formats and will try all of them
         until one succeeds or all of them fail.
         """
+        self.config_files = []
         self._conf = {}
         for config_file in config_files:
             self.add_config_file(config_file)
-
-        self.config_files = []
 
     def _process_file(self, filename, file_type):
         process_func = getattr(self, '_process_%s_file' % file_type)
