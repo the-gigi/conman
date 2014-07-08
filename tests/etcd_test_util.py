@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-import os
 import subprocess
 import time
 import psutil
 import six
+from conman.conman_etcd import thrice
 
 
 def start_local_etcd_server():
@@ -51,19 +51,33 @@ def kill_local_etcd_server():
     # Server didn't die, just give up and raise an exception
     raise Exception('local etcd server is still running')
 
-
-def add_key(key, values):
-    """Add a bunch of key value pairs to an etcd key using etcdctl.
+@thrice()
+def set_key(client, key, values):
+    """Insert a bunch of key value pairs to an etcd key using etcdctl.
 
     The values must be a dictionary, sub-keys will be created
     """
+    delete_key(client, key)
     assert isinstance(values, dict)
     for name, value in six.iteritems(values):
-        if isinstance(value, str):
-            value = "'{0}'".format(value)
-        os.system('etcdctl set {0}/{1} {2}'.format(key, name, value))
+        k = '{0}/{1}'.format(key, name)
+        if isinstance(value, dict):
+            set_key(client, k, value)
+        else:
+            client.write(k, value)
 
+@thrice()
+def delete_key(client, key):
+    """Delete a key if exists
 
-
-
+    Ignore non-existing keys
+    """
+    try:
+        client.delete(key, recursive=True)
+    except KeyError:
+        pass
+    except Exception as e:
+        # Ignore Raft internal errors that happen here sometimes
+        if str(e) != 'Raft Internal Error : None':
+            raise
 

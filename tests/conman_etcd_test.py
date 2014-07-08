@@ -1,9 +1,9 @@
-import os
 from unittest import TestCase
 from conman.conman_etcd import ConManEtcd
-from etcd_test_util import start_local_etcd_server, kill_local_etcd_server, \
-    add_key
-
+from etcd_test_util import (start_local_etcd_server,
+                            kill_local_etcd_server,
+                            set_key,
+                            delete_key)
 
 class ConManEtcdTest(TestCase):
     @classmethod
@@ -13,7 +13,6 @@ class ConManEtcdTest(TestCase):
 
         # Add good key
         cls.good_dict = dict(a='1', b='Yeah, it works!!!')
-        add_key('good', cls.good_dict)
 
     @classmethod
     def tearDownClass(cls):
@@ -25,8 +24,14 @@ class ConManEtcdTest(TestCase):
     def setUp(self):
         self.conman = ConManEtcd()
 
+        cli = self.conman.client
+        delete_key(cli, 'good')
+        delete_key(cli, 'refresh_test')
+        set_key(cli, 'good', self.good_dict)
+
     def tearDown(self):
-        pass
+        delete_key(self.conman.client, 'good')
+        delete_key(self.conman.client, 'refresh_test')
 
     def test_initialization(self):
         cli = self.conman.client
@@ -45,7 +50,31 @@ class ConManEtcdTest(TestCase):
         self.assertRaises(Exception, self.conman.add_key, 'no such key')
 
     def test_refresh(self):
-        pass
+        self.assertFalse('refresh_test' in self.conman.keys)
+
+        # Insert a new key to etcd
+        set_key(self.conman.client, 'refresh_test', dict(a='1'))
+
+        # The new key should still not be visible by conman
+        self.assertFalse('refresh_test' in self.conman.keys)
+
+        # Refresh to get the new key
+        self.conman.refresh('refresh_test')
+
+        # The new key should now be visible by conman
+        self.assertEqual(dict(a='1'), self.conman.keys['refresh_test'])
+
+        # Change the key
+        set_key(self.conman.client, 'refresh_test', dict(b='3'))
+
+        # The previous value should still be visible by conman
+        self.assertEqual(dict(a='1'), self.conman.keys['refresh_test'])
+
+        # Refresh again
+        self.conman.refresh('refresh_test')
+
+        # The new value should now be visible by conman
+        self.assertEqual(dict(b='3'), self.conman.keys['refresh_test'])
 
     def test_get_key(self):
         pass
