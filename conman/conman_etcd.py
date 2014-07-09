@@ -7,11 +7,11 @@ It provides a read-only access and just exposes a nested dict
 import functools
 import etcd
 import time
+from conman.conman_base import ConManBase
 
 
 def thrice(delay=0.5):
     """This decorator tries failed operations 3 times before it gives up
-
 
     The delay determines how long to wait between tries (in seconds)
     """
@@ -29,9 +29,9 @@ def thrice(delay=0.5):
     return decorated
 
 
-class ConManEtcd(object):
+class ConManEtcd(ConManBase):
     def __init__(self, host='127.0.0.1', port=4001, allow_reconnect=True):
-        self.keys = {}
+        ConManBase.__init__(self)
         self._connect(host, port, allow_reconnect)
 
     @thrice()
@@ -61,7 +61,7 @@ class ConManEtcd(object):
         When a key is added all its data is stored as a dict
         """
         etcd_result = self.client.read(key, recursive=True, sorted=True)
-        self._add_key_recursively(self.keys, key, etcd_result)
+        self._add_key_recursively(self._conf, key, etcd_result)
 
     def refresh(self, key=None):
         """Refresh an existing key or all keys
@@ -70,14 +70,6 @@ class ConManEtcd(object):
 
         If the key parameter doesn't exist an exception will be raised
         """
-        keys = [key] if key else self.keys.keys()
+        keys = [key] if key else self._conf.keys()
         for k in keys:
             self.add_key(k)
-
-    def get_key(self, key):
-        """Get all the data stored under an etcd key and return it as a dict
-
-        :param key: the etcd path to get
-        :return: all data under key or empty dict if key doesn't exist
-        """
-        return self.keys.get(key, {})

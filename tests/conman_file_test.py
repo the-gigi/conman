@@ -136,3 +136,9 @@ class ConmanFileTest(TestCase):
         expected = dict(json_conf=dict(key='value'))
         self.assertDictEqual(expected, c._conf)
 
+    def test_dictionary_access(self):
+        c = ConManFile(self._good_files.values())
+        self.assertEqual('root_value', c['root_key'])
+
+
+

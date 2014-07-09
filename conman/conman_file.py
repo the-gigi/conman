@@ -1,5 +1,7 @@
 import json
 import os
+from conman.conman_base import ConManBase
+
 try:
     from ConfigParser import SafeConfigParser
 except ImportError:
@@ -10,7 +12,7 @@ import yaml
 FILE_TYPES = 'ini json yaml'.split()
 
 
-class ConManFile(object):
+class ConManFile(ConManBase):
     def __init__(self, config_files=()):
         """Initialize with config files
 
@@ -23,8 +25,8 @@ class ConManFile(object):
         ConMan works with multiple file formats and will try all of them
         until one succeeds or all of them fail.
         """
-        self.config_files = []
-        self._conf = {}
+        ConManBase.__init__(self)
+        self._config_files = []
         for config_file in config_files:
             self.add_config_file(config_file)
 
@@ -65,7 +67,7 @@ class ConManFile(object):
         if filename is not None and env_variable is not None:
             raise Exception('filename and env_variable are both not None')
 
-        if filename in self.config_files:
+        if filename in self._config_files:
             raise Exception('filename is already in the config file list')
 
         if env_variable:
