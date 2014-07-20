@@ -22,7 +22,7 @@ def thrice(delay=0.5):
                 try:
                     return f(*args, **kwargs)
                 except Exception:
-                    if i == 3:
+                    if i == 2:
                         raise
                     time.sleep(delay)
         return wrapped
