@@ -1,13 +1,8 @@
-import json
 import os
-from conman.conman_base import ConManBase
-
-try:
-    from ConfigParser import SafeConfigParser
-except ImportError:
-    from configparser import SafeConfigParser
+import json
 import yaml
-
+from ConfigParser import SafeConfigParser
+from conman.conman_base import ConManBase
 
 FILE_TYPES = 'ini json yaml'.split()
 
