@@ -25,10 +25,6 @@ class ConManFile(ConManBase):
         for config_file in config_files:
             self.add_config_file(config_file)
 
-    def _process_file(self, filename, file_type):
-        process_func = getattr(self, '_process_%s_file' % file_type)
-        process_func(filename)
-
     def add_config_file(self,
                         filename=None,
                         env_variable=None,
@@ -109,6 +105,10 @@ class ConManFile(ConManBase):
                     yaml='yaml',
                     json='json',
                     ini='ini').get(ext, None)
+
+    def _process_file(self, filename, file_type):
+        process_func = getattr(self, '_process_%s_file' % file_type)
+        process_func(filename)
 
     def _process_ini_file(self, filename):
         parser = SafeConfigParser()
