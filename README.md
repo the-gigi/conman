@@ -1,5 +1,4 @@
 conman
 ======
-
-A Python configuration manager that manages configuration variables and
-also can take care of command-line arguments and environment variables.
+A Python configuration manager that handles multiple configuration files 
+and distributed configuration via etcd.
