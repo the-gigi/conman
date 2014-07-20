@@ -1,3 +1,8 @@
+"""This class manages multiple configuration files in several file formats
+
+It provides a read-only access and just exposes a nested dict
+Supported file formats: Ini,  Json and Yaml
+"""
 import os
 import json
 import yaml
