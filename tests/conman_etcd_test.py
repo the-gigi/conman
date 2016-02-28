@@ -1,9 +1,11 @@
 from unittest import TestCase
+
 from conman.conman_etcd import ConManEtcd
 from etcd_test_util import (start_local_etcd_server,
                             kill_local_etcd_server,
                             set_key,
                             delete_key)
+
 
 class ConManEtcdTest(TestCase):
     @classmethod
@@ -36,7 +38,6 @@ class ConManEtcdTest(TestCase):
     def test_initialization(self):
         cli = self.conman.client
         self.assertEqual('http://127.0.0.1:4001', cli.base_uri)
-        self.assertEqual(['http://127.0.0.1:4001'], cli.machines)
         self.assertEqual('127.0.0.1', cli.host)
         self.assertEqual(4001, cli.port)
 

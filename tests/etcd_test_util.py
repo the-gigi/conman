@@ -3,6 +3,8 @@ import subprocess
 import time
 import psutil
 import six
+from etcd import EtcdKeyNotFound
+
 from conman.conman_etcd import thrice
 
 
@@ -14,7 +16,7 @@ def start_local_etcd_server():
     if is_local_etcd_running():
         return
 
-    p = subprocess.Popen('etcd',
+    p = subprocess.Popen('/usr/local/bin/etcd',
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
     # Wait for etcd process to start
@@ -23,15 +25,19 @@ def start_local_etcd_server():
 
 
 def is_local_etcd_running():
-    # Get non-zombie process names
-    etcd = [p for p in psutil.process_iter() if p.name() == 'etcd']
+    etcd = None
+    for p in psutil.process_iter():
+        try:
+            if p.name() == 'etcd':
+                etcd = p
+                break
+        except psutil.ZombieProcess as e:
+            pass
+
     if not etcd:
         return False
 
-    etcd = etcd[0]
-
     return etcd.status() == 'running'
-
 
 def kill_local_etcd_server():
     if not is_local_etcd_running():
@@ -74,7 +80,7 @@ def delete_key(client, key):
     """
     try:
         client.delete(key, recursive=True)
-    except KeyError:
+    except EtcdKeyNotFound:
         pass
     except Exception as e:
         # Ignore Raft internal errors that happen here sometimes
