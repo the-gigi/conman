@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(name='conman',
       version='0.2',
-      license='LICENSE',
+      license='MIT',
       author='Gigi Sayfan',
       author_email='the.gigi@gmail.com',
       description='Manage configuration files',
