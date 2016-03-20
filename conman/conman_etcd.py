@@ -40,10 +40,12 @@ class ConManEtcd(ConManBase):
                  host='127.0.0.1',
                  port=4001,
                  allow_reconnect=True,
-                 on_change=lambda x: None):
+                 on_change=lambda k, a, v: None,
+                 watch_timeout=30):
         ConManBase.__init__(self)
         self._connect(host, port, allow_reconnect)
         self.on_change = on_change
+        self.watch_timeout = watch_timeout
         self.stop_watching = False
 
     @thrice()
@@ -71,9 +73,11 @@ class ConManEtcd(ConManBase):
         def watch_key():
             while not self.stop_watching:
                 try:
-                    result = self.client.watch(key, timeout=30)
+                    result = self.client.watch(key,
+                                               recursive=True,
+                                               timeout=self.watch_timeout)
                     try:
-                        self.on_change(key)
+                        self.on_change(key, result.action, result.value)
                     except Exception as e:
                         pass
                 except etcd.EtcdWatchTimedOut as e:

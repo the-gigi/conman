@@ -1,9 +1,10 @@
+from collections import defaultdict
 from functools import partial
 from unittest import TestCase
 
 import time
 
-from conman.conman_etcd import ConManEtcd, thrice
+from conman.conman_etcd import ConManEtcd
 from etcd_test_util import (start_local_etcd_server,
                             kill_local_etcd_server,
                             set_key,
@@ -87,11 +88,10 @@ class ConManEtcdTest(TestCase):
         self.assertEqual(self.good_dict, self.conman['good'])
 
     def test_watch_existing_key(self):
-        def on_change(change_set, key):
-            change_set.add(key)
+        def on_change(change_dict, key, action, value):
+            change_dict[key].append((action, value))
 
-        changed_keys = set()
-
+        change_dict = defaultdict(list)
         self.assertFalse('watch_test' in self.conman)
 
         # Insert a new key to etcd
@@ -107,24 +107,25 @@ class ConManEtcdTest(TestCase):
         self.assertEqual(dict(a='1'), self.conman['watch_test'])
 
         # Set the on_change() callback of conman (normally at construction)
-        self.conman.on_change = partial(on_change, changed_keys)
+        self.conman.on_change = partial(on_change, change_dict)
 
         # Change the key
-        set_key(self.conman.client, 'watch_test', dict(b='3'))
+        self.conman.client.write('watch_test/b', '3')
 
         # The previous value should still be visible by conman
         self.assertEqual(dict(a='1'), self.conman['watch_test'])
 
         # Wait for the change callback to detect the change
         for i in range(3):
-            if len(changed_keys) > 0:
+            if change_dict:
                 break
             time.sleep(1)
 
-        self.assertEquals({'watch_test'}, changed_keys)
+        expected = dict(watch_test=[('set', '3')])
+        self.assertEquals(expected, dict(change_dict))
 
         # Refresh again
         self.conman.refresh('watch_test')
 
         # The new value should now be visible by conman
-        self.assertEqual(dict(b='3'), self.conman['watch_test'])
+        self.assertEqual(dict(a='1', b='3'), self.conman['watch_test'])
