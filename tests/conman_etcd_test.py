@@ -37,6 +37,8 @@ class ConManEtcdTest(TestCase):
     def tearDown(self):
         delete_key(self.conman.client, 'good')
         delete_key(self.conman.client, 'refresh_test')
+        delete_key(self.conman.client, 'watch_test')
+        self.conman.stop_watchers()
 
     def test_initialization(self):
         cli = self.conman.client
@@ -47,38 +49,38 @@ class ConManEtcdTest(TestCase):
     def test_add_good_key(self):
         self.conman.add_key('good')
         expected = self.good_dict
-        actual = self.conman._conf['good']
+        actual = self.conman['good']
         self.assertEqual(expected, actual)
 
     def test_add_bad_key(self):
         self.assertRaises(Exception, self.conman.add_key, 'no such key')
 
     def test_refresh(self):
-        self.assertFalse('refresh_test' in self.conman._conf)
+        self.assertFalse('refresh_test' in self.conman)
 
         # Insert a new key to etcd
         set_key(self.conman.client, 'refresh_test', dict(a='1'))
 
         # The new key should still not be visible by conman
-        self.assertFalse('refresh_test' in self.conman._conf)
+        self.assertFalse('refresh_test' in self.conman)
 
         # Refresh to get the new key
         self.conman.refresh('refresh_test')
 
         # The new key should now be visible by conman
-        self.assertEqual(dict(a='1'), self.conman._conf['refresh_test'])
+        self.assertEqual(dict(a='1'), self.conman['refresh_test'])
 
         # Change the key
         set_key(self.conman.client, 'refresh_test', dict(b='3'))
 
         # The previous value should still be visible by conman
-        self.assertEqual(dict(a='1'), self.conman._conf['refresh_test'])
+        self.assertEqual(dict(a='1'), self.conman['refresh_test'])
 
         # Refresh again
         self.conman.refresh('refresh_test')
 
         # The new value should now be visible by conman
-        self.assertEqual(dict(b='3'), self.conman._conf['refresh_test'])
+        self.assertEqual(dict(b='3'), self.conman['refresh_test'])
 
     def test_dictionary_access(self):
         self.conman.add_key('good')
@@ -90,19 +92,19 @@ class ConManEtcdTest(TestCase):
 
         changed_keys = set()
 
-        self.assertFalse('watch_test' in self.conman._conf)
+        self.assertFalse('watch_test' in self.conman)
 
         # Insert a new key to etcd
         set_key(self.conman.client, 'watch_test', dict(a='1'))
 
         # The new key should still not be visible by conman
-        self.assertFalse('watch_test' in self.conman._conf)
+        self.assertFalse('watch_test' in self.conman)
 
         # Refresh to get the new key
         self.conman.refresh('watch_test')
 
         # The new key should now be visible by conman
-        self.assertEqual(dict(a='1'), self.conman._conf['watch_test'])
+        self.assertEqual(dict(a='1'), self.conman['watch_test'])
 
         # Set the on_change() callback of conman (normally at construction)
         self.conman.on_change = partial(on_change, changed_keys)
@@ -111,7 +113,7 @@ class ConManEtcdTest(TestCase):
         set_key(self.conman.client, 'watch_test', dict(b='3'))
 
         # The previous value should still be visible by conman
-        self.assertEqual(dict(a='1'), self.conman._conf['watch_test'])
+        self.assertEqual(dict(a='1'), self.conman['watch_test'])
 
         # Wait for the change callback to detect the change
         for i in range(3):
@@ -125,4 +127,4 @@ class ConManEtcdTest(TestCase):
         self.conman.refresh('watch_test')
 
         # The new value should now be visible by conman
-        self.assertEqual(dict(b='3'), self.conman._conf['watch_test'])
+        self.assertEqual(dict(b='3'), self.conman['watch_test'])

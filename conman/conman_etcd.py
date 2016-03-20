@@ -5,10 +5,11 @@ See:  http://python-etcd.readthedocs.org/
 It provides a read-only access and just exposes a nested dict
 """
 import functools
+import time
 from threading import Thread
 
 import etcd
-import time
+
 from conman.conman_base import ConManBase
 
 
@@ -17,6 +18,7 @@ def thrice(delay=0.5):
 
     The delay determines how long to wait between tries (in seconds)
     """
+
     def decorated(f):
         @functools.wraps(f)
         def wrapped(*args, **kwargs):
@@ -27,7 +29,9 @@ def thrice(delay=0.5):
                     if i == 2:
                         raise
                     time.sleep(delay)
+
         return wrapped
+
     return decorated
 
 
@@ -40,7 +44,7 @@ class ConManEtcd(ConManBase):
         ConManBase.__init__(self)
         self._connect(host, port, allow_reconnect)
         self.on_change = on_change
-        self.watchers = {}
+        self.stop_watching = False
 
     @thrice()
     def _connect(self, host, port, allow_reconnect):
@@ -62,14 +66,20 @@ class ConManEtcd(ConManBase):
                 self._add_key_recursively(target, k, c)
 
     def _watch(self, key):
+        """Watch a key in a thread"""
+
         def watch_key():
-            try:
-                self.on_change(key)
-            except Exception as e:  # noqa
-                pass
-            self._watch(key)
-        t = Thread(target=watch_key).start()
-        self.watchers[key] = t
+            while not self.stop_watching:
+                try:
+                    result = self.client.watch(key, timeout=30)
+                    try:
+                        self.on_change(key)
+                    except Exception as e:
+                        pass
+                except etcd.EtcdWatchTimedOut as e:
+                    pass
+
+        Thread(target=watch_key).start()
 
     def add_key(self, key):
         """Add a key to managed etcd keys and store its data
@@ -93,3 +103,6 @@ class ConManEtcd(ConManBase):
         for k in keys:
             self.add_key(k)
 
+    def stop_watchers(self):
+        """All watching threads will stop soon"""
+        self.stop_watching = True
