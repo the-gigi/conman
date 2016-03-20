@@ -1,6 +1,9 @@
+from functools import partial
 from unittest import TestCase
 
-from conman.conman_etcd import ConManEtcd
+import time
+
+from conman.conman_etcd import ConManEtcd, thrice
 from etcd_test_util import (start_local_etcd_server,
                             kill_local_etcd_server,
                             set_key,
@@ -80,3 +83,46 @@ class ConManEtcdTest(TestCase):
     def test_dictionary_access(self):
         self.conman.add_key('good')
         self.assertEqual(self.good_dict, self.conman['good'])
+
+    def test_watch_existing_key(self):
+        def on_change(change_set, key):
+            change_set.add(key)
+
+        changed_keys = set()
+
+        self.assertFalse('watch_test' in self.conman._conf)
+
+        # Insert a new key to etcd
+        set_key(self.conman.client, 'watch_test', dict(a='1'))
+
+        # The new key should still not be visible by conman
+        self.assertFalse('watch_test' in self.conman._conf)
+
+        # Refresh to get the new key
+        self.conman.refresh('watch_test')
+
+        # The new key should now be visible by conman
+        self.assertEqual(dict(a='1'), self.conman._conf['watch_test'])
+
+        # Set the on_change() callback of conman (normally at construction)
+        self.conman.on_change = partial(on_change, changed_keys)
+
+        # Change the key
+        set_key(self.conman.client, 'watch_test', dict(b='3'))
+
+        # The previous value should still be visible by conman
+        self.assertEqual(dict(a='1'), self.conman._conf['watch_test'])
+
+        # Wait for the change callback to detect the change
+        for i in range(3):
+            if len(changed_keys) > 0:
+                break
+            time.sleep(1)
+
+        self.assertEquals({'watch_test'}, changed_keys)
+
+        # Refresh again
+        self.conman.refresh('watch_test')
+
+        # The new value should now be visible by conman
+        self.assertEqual(dict(b='3'), self.conman._conf['watch_test'])

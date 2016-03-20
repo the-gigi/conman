@@ -5,6 +5,8 @@ See:  http://python-etcd.readthedocs.org/
 It provides a read-only access and just exposes a nested dict
 """
 import functools
+from threading import Thread
+
 import etcd
 import time
 from conman.conman_base import ConManBase
@@ -30,9 +32,15 @@ def thrice(delay=0.5):
 
 
 class ConManEtcd(ConManBase):
-    def __init__(self, host='127.0.0.1', port=4001, allow_reconnect=True):
+    def __init__(self,
+                 host='127.0.0.1',
+                 port=4001,
+                 allow_reconnect=True,
+                 on_change=lambda x: None):
         ConManBase.__init__(self)
         self._connect(host, port, allow_reconnect)
+        self.on_change = on_change
+        self.watchers = {}
 
     @thrice()
     def _connect(self, host, port, allow_reconnect):
@@ -53,6 +61,16 @@ class ConManEtcd(ConManBase):
                 k = c.key.split('/')[-1]
                 self._add_key_recursively(target, k, c)
 
+    def _watch(self, key):
+        def watch_key():
+            try:
+                self.on_change(key)
+            except Exception as e:  # noqa
+                pass
+            self._watch(key)
+        t = Thread(target=watch_key).start()
+        self.watchers[key] = t
+
     def add_key(self, key):
         """Add a key to managed etcd keys and store its data
 
@@ -62,6 +80,7 @@ class ConManEtcd(ConManBase):
         """
         etcd_result = self.client.read(key, recursive=True, sorted=True)
         self._add_key_recursively(self._conf, key, etcd_result)
+        self._watch(key)
 
     def refresh(self, key=None):
         """Refresh an existing key or all keys
@@ -73,3 +92,4 @@ class ConManEtcd(ConManBase):
         keys = [key] if key else self._conf.keys()
         for k in keys:
             self.add_key(k)
+

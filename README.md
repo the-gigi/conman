@@ -13,7 +13,7 @@ Conman support YAML, JSON and INI file formats.
 
 Usage
 =====
-See the tests directroy for examples.
+See the tests directory for examples.
 
 Article
 =======
@@ -21,3 +21,11 @@ I wrote conman to support a [Dr. Dobbs](http://www.drdobbs.com/) article
 called [Program Configuration in Python](http://www.drdobbs.com/open-source/program-configuration-in-python/240169310).
 
 In the article I go over conman's code and explain all the important parts.
+
+Watch Feature
+=============
+
+A new feature that is not covered by the article is automatic watch changes 
+for keys for the EtcdConMan. When using the this class you can provide a 
+callback function that will be called when ever any value is 
+added/removed/modifed under any key. 

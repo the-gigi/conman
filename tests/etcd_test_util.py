@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import subprocess
 import time
+
 import psutil
 import six
 from etcd import EtcdKeyNotFound
@@ -39,6 +40,7 @@ def is_local_etcd_running():
 
     return etcd.status() == 'running'
 
+
 def kill_local_etcd_server():
     if not is_local_etcd_running():
         return
@@ -57,6 +59,7 @@ def kill_local_etcd_server():
     # Server didn't die, just give up and raise an exception
     raise Exception('local etcd server is still running')
 
+
 @thrice()
 def set_key(client, key, values):
     """Insert a bunch of key value pairs to an etcd key using etcdctl.
@@ -72,6 +75,7 @@ def set_key(client, key, values):
         else:
             client.write(k, value)
 
+
 @thrice()
 def delete_key(client, key):
     """Delete a key if exists
@@ -86,4 +90,3 @@ def delete_key(client, key):
         # Ignore Raft internal errors that happen here sometimes
         if str(e) != 'Raft Internal Error : None':
             raise
-
