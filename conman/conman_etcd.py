@@ -67,7 +67,7 @@ class ConManEtcd(ConManBase):
                 k = c.key.split('/')[-1]
                 self._add_key_recursively(target, k, c)
 
-    def _watch(self, key):
+    def watch(self, key):
         """Watch a key in a thread"""
 
         def watch_key():
@@ -77,35 +77,41 @@ class ConManEtcd(ConManBase):
                                                recursive=True,
                                                timeout=self.watch_timeout)
                     try:
-                        self.on_change(key, result.action, result.value)
+                        self.on_change(result.key,
+                                       result.action,
+                                       result.value)
                     except Exception as e:
                         pass
                 except etcd.EtcdWatchTimedOut as e:
                     pass
 
-        Thread(target=watch_key).start()
+        if not self.stop_watching:
+            Thread(target=watch_key).start()
 
-    def add_key(self, key):
+    def add_key(self, key, watch=True):
         """Add a key to managed etcd keys and store its data
 
-        :param key: the etcd path
+        :param str key: the etcd path
+        :param bool watch: determine if need to watch the key
 
         When a key is added all its data is stored as a dict
         """
         etcd_result = self.client.read(key, recursive=True, sorted=True)
         self._add_key_recursively(self._conf, key, etcd_result)
-        self._watch(key)
+        if watch:
+            self.watch(key)
 
     def refresh(self, key=None):
         """Refresh an existing key or all keys
 
         :param key: the key to refresh (if None refresh all keys)
 
-        If the key parameter doesn't exist an exception will be raised
+        If the key parameter doesn't exist an exception will be raised.
+        No need to watch again the conf keys.
         """
         keys = [key] if key else self._conf.keys()
         for k in keys:
-            self.add_key(k)
+            self.add_key(k, watch=False)
 
     def stop_watchers(self):
         """All watching threads will stop soon"""
