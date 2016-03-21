@@ -80,9 +80,9 @@ class ConManEtcd(ConManBase):
                         self.on_change(result.key,
                                        result.action,
                                        result.value)
-                    except Exception as e:
+                    except Exception as e:  # noqa
                         pass
-                except etcd.EtcdWatchTimedOut as e:
+                except etcd.EtcdWatchTimedOut as e:  # noqa
                     pass
 
         if not self.stop_watching:

@@ -95,7 +95,7 @@ class ConManEtcdTest(TestCase):
         self.assertFalse('watch_test' in self.conman)
 
         # Insert a new key to etcd
-        set_key(self.conman.client, 'watch_test', dict(a='1'))
+        self.conman.client.write('watch_test/a', 1)
 
         # The new key should still not be visible by conman
         self.assertFalse('watch_test' in self.conman)
@@ -107,7 +107,9 @@ class ConManEtcdTest(TestCase):
         self.assertEqual(dict(a='1'), self.conman['watch_test'])
 
         # Set the on_change() callback of conman (normally at construction)
-        self.conman.on_change = partial(on_change, change_dict)
+        on_change = partial(on_change, change_dict)
+        self.conman.on_change = on_change
+        self.conman.watch('watch_test')
 
         # Change the key
         self.conman.client.write('watch_test/b', '3')
@@ -121,8 +123,9 @@ class ConManEtcdTest(TestCase):
                 break
             time.sleep(1)
 
-        expected = dict(watch_test=[('set', '3')])
-        self.assertEquals(expected, dict(change_dict))
+        expected = {'/watch_test/b':[('set', '3')]}
+        actual = dict(change_dict)
+        self.assertEquals(expected, actual)
 
         # Refresh again
         self.conman.refresh('watch_test')
