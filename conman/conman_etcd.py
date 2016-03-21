@@ -63,7 +63,10 @@ class ConManEtcd(ConManBase):
         else:
             target[key] = {}
             target = target[key]
-            for c in etcd_result.children:
+            for c in etcd_result.leaves:
+                # If there are no children it returns the etcd_result itself
+                if c == etcd_result:
+                    continue
                 k = c.key.split('/')[-1]
                 self._add_key_recursively(target, k, c)
 
