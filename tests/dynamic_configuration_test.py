@@ -41,7 +41,9 @@ class DynamicConfigurarionTest(TestCase):
         filenames = [os.path.abspath('dyn_conf_{}.txt'.format(i)) for i
                      in range(count)]
         for i in range(count):
-            p = Process(target=Program, args=('dyn_conf', filenames[i],))
+            p = Process(target=Program, args=('127.0.0.1',
+                                              'dyn_conf',
+                                              filenames[i]))
             programs.append(p)
             p.start()
 

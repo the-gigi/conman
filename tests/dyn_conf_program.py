@@ -6,8 +6,9 @@ from conman.conman_etcd import ConManEtcd
 
 
 class Program(object):
-    def __init__(self, key, filename):
-        self.conman = ConManEtcd(on_change=self.on_configuration_change,
+    def __init__(self, host, key, filename):
+        self.conman = ConManEtcd(host=host,
+                                 on_change=self.on_configuration_change,
                                  watch_timeout=5)
         self.filename = filename
         open(self.filename, 'w+')
