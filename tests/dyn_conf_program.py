@@ -6,8 +6,19 @@ from conman.conman_etcd import ConManEtcd
 
 
 class Program(object):
-    def __init__(self, host, key, filename):
-        self.conman = ConManEtcd(host=host,
+    def __init__(self,
+                 key,
+                 filename,
+                 protocol='http',
+                 host='127.0.0.1',
+                 port=4001,
+                 username=None,
+                 password=None):
+        self.conman = ConManEtcd(protocol=protocol,
+                                 host=host,
+                                 port=int(port),
+                                 username=username,
+                                 password=password,
                                  on_change=self.on_configuration_change,
                                  watch_timeout=5)
         self.filename = filename

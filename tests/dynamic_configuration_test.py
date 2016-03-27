@@ -11,7 +11,7 @@ from etcd_test_util import (start_local_etcd_server,
 from tests.dyn_conf_program import Program
 
 
-class DynamicConfigurarionTest(TestCase):
+class DynamicConfigurationTest(TestCase):
     @classmethod
     def setUpClass(cls):
         # Start local etcd server if not running
@@ -41,9 +41,8 @@ class DynamicConfigurarionTest(TestCase):
         filenames = [os.path.abspath('dyn_conf_{}.txt'.format(i)) for i
                      in range(count)]
         for i in range(count):
-            p = Process(target=Program, args=('127.0.0.1',
-                                              'dyn_conf',
-                                              filenames[i]))
+            p = Process(target=Program, kwargs=dict(key='dyn_conf',
+                                                    filename=filenames[i]))
             programs.append(p)
             p.start()
 

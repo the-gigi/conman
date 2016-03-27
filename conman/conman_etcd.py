@@ -9,7 +9,6 @@ import time
 from threading import Thread
 
 import etcd
-
 from conman.conman_base import ConManBase
 
 
@@ -37,12 +36,21 @@ def thrice(delay=0.5):
 
 class ConManEtcd(ConManBase):
     def __init__(self,
-                 protocol='http',
                  host='127.0.0.1',
                  port=4001,
+                 srv_domain=None,
+                 version_prefix='/v2',
+                 read_timeout=60,
+                 allow_redirect=True,
+                 protocol='http',
+                 cert=None,
+                 ca_cert=None,
                  username=None,
                  password=None,
-                 allow_reconnect=True,
+                 allow_reconnect=False,
+                 use_proxies=False,
+                 expected_cluster_id=None,
+                 per_host_pool_size=10,
                  on_change=lambda k, a, v: None,
                  watch_timeout=30):
         ConManBase.__init__(self)
@@ -51,12 +59,21 @@ class ConManEtcd(ConManBase):
         self.stop_watching = False
 
         self.client = etcd.Client(
-            protocol=protocol,
             host=host,
             port=port,
+            srv_domain=srv_domain,
+            version_prefix=version_prefix,
+            read_timeout=read_timeout,
+            allow_redirect=allow_redirect,
+            protocol=protocol,
+            cert=cert,
+            ca_cert=ca_cert,
             username=username,
             password=password,
-            allow_reconnect=allow_reconnect)
+            allow_reconnect=allow_reconnect,
+            use_proxies=use_proxies,
+            expected_cluster_id=expected_cluster_id,
+            per_host_pool_size=per_host_pool_size)
 
     def _add_key_recursively(self, target, key, etcd_result):
         if key.startswith('/'):
