@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='conman',
-      version='0.4',
+      version='0.5',
       url='https://github.com/the-gigi/conman',
       license='MIT',
       author='Gigi Sayfan',
