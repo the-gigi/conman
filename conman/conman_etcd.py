@@ -37,22 +37,25 @@ def thrice(delay=0.5):
 
 class ConManEtcd(ConManBase):
     def __init__(self,
+                 protocol='http',
                  host='127.0.0.1',
                  port=4001,
+                 username=None,
+                 password=None,
                  allow_reconnect=True,
                  on_change=lambda k, a, v: None,
                  watch_timeout=30):
         ConManBase.__init__(self)
-        self._connect(host, port, allow_reconnect)
         self.on_change = on_change
         self.watch_timeout = watch_timeout
         self.stop_watching = False
 
-    @thrice()
-    def _connect(self, host, port, allow_reconnect):
         self.client = etcd.Client(
+            protocol=protocol,
             host=host,
             port=port,
+            username=username,
+            password=password,
             allow_reconnect=allow_reconnect)
 
     def _add_key_recursively(self, target, key, etcd_result):
