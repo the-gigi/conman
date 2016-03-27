@@ -14,6 +14,8 @@ from tests.dyn_conf_program import Program
 class DynamicConfigurationTest(TestCase):
     @classmethod
     def setUpClass(cls):
+        os.system('rm dyn_conf*.txt')
+        kill_local_etcd_server()
         # Start local etcd server if not running
         start_local_etcd_server()
 
@@ -31,8 +33,8 @@ class DynamicConfigurationTest(TestCase):
         set_key(self.cli, self.key, dict(a='1', b='Yeah, it works!!!'))
 
     def tearDown(self):
-        delete_key(self.conman.client, self.key)
         self.conman.stop_watchers()
+        delete_key(self.conman.client, self.key)
 
     def test_dynamic_configuration(self):
         # Launch 3 programs
@@ -56,7 +58,7 @@ class DynamicConfigurationTest(TestCase):
 
         # Get the output from all the programs
         output = [open(f).read() for f in filenames]
-        for i in range(3):
+        for i in range(5):
             if output[0] == '':
                 time.sleep(1)
             output = [open(f).read() for f in filenames]

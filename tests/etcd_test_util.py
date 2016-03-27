@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 import subprocess
 import time
 
@@ -29,7 +30,7 @@ def is_local_etcd_running():
     etcd = None
     for p in psutil.process_iter():
         try:
-            if p.name() == 'etcd':
+            if p.name() == 'etcd' and p.status() != 'zombie':
                 etcd = p
                 break
         except psutil.ZombieProcess as e:
@@ -46,8 +47,11 @@ def kill_local_etcd_server():
         return
 
     for p in psutil.process_iter():
-        if p.name() == 'etcd' and p.status() != 'zombie':
-            p.kill()
+        try:
+            if p.name() == 'etcd' and p.status() != 'zombie':
+                p.kill()
+        except psutil.ZombieProcess:
+            pass
 
     # Wait for 10 seconds for process to die
     for i in range(20):
