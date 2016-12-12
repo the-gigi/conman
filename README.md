@@ -26,6 +26,6 @@ Watch Feature
 =============
 
 A new feature that is not covered by the article is automatic watch changes 
-for keys for the EtcdConMan. When using the this class you can provide a 
-callback function that will be called when ever any value is 
+for keys of EtcdConMan. When using this class you can provide a 
+callback function that will be called whenever any value is 
 added/removed/modifed under any key. 
