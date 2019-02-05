@@ -6,9 +6,7 @@ It provides a read-only access and just exposes a nested dict
 """
 import functools
 import time
-from threading import Thread
-
-import etcd
+import etcd3
 from conman.conman_base import ConManBase
 
 
@@ -21,7 +19,7 @@ def thrice(delay=0.5):
     def decorated(f):
         @functools.wraps(f)
         def wrapped(*args, **kwargs):
-            for i in xrange(3):
+            for i in range(3):
                 try:
                     return f(*args, **kwargs)
                 except Exception:
@@ -37,81 +35,57 @@ def thrice(delay=0.5):
 class ConManEtcd(ConManBase):
     def __init__(self,
                  host='127.0.0.1',
-                 port=4001,
-                 srv_domain=None,
-                 version_prefix='/v2',
-                 read_timeout=60,
-                 allow_redirect=True,
-                 protocol='http',
-                 cert=None,
+                 port=2379,
                  ca_cert=None,
-                 username=None,
+                 cert_key=None,
+                 cert_cert=None,
+                 timeout=None,
+                 user=None,
                  password=None,
-                 allow_reconnect=False,
-                 use_proxies=False,
-                 expected_cluster_id=None,
-                 per_host_pool_size=10,
-                 on_change=lambda k, a, v: None,
-                 watch_timeout=30):
+                 grpc_options=None,
+                 on_change=lambda e: None):
         ConManBase.__init__(self)
         self.on_change = on_change
-        self.watch_timeout = watch_timeout
-        self.stop_watching = False
-
-        self.client = etcd.Client(
+        self.client = etcd3.client(
             host=host,
             port=port,
-            srv_domain=srv_domain,
-            version_prefix=version_prefix,
-            read_timeout=read_timeout,
-            allow_redirect=allow_redirect,
-            protocol=protocol,
-            cert=cert,
             ca_cert=ca_cert,
-            username=username,
+            cert_key=cert_key,
+            cert_cert=cert_cert,
+            timeout=timeout,
+            user=user,
             password=password,
-            allow_reconnect=allow_reconnect,
-            use_proxies=use_proxies,
-            expected_cluster_id=expected_cluster_id,
-            per_host_pool_size=per_host_pool_size)
+            grpc_options=grpc_options,
+        )
 
-    def _add_key_recursively(self, target, key, etcd_result):
-        if key.startswith('/'):
-            key = key[1:]
-        if etcd_result.value:
-            target[key] = etcd_result.value
-        else:
-            target[key] = {}
-            target = target[key]
-            for c in etcd_result.leaves:
-                # If there are no children it returns the etcd_result itself
-                if c == etcd_result:
-                    continue
-                k = c.key.split('/')[-1]
-                self._add_key_recursively(target, k, c)
+    def _add_key_recursively(self, etcd_result):
+        ok = False
+        target = self._conf
+        for x in etcd_result:
+            ok = True
+            value = x[0].decode()
+            key = x[1].key.decode()
+            components = key.split('/')
+            t = target
+            for c in components[:-1]:
+                if c not in t:
+                    t[c] = {}
+                t = t[c]
+            t[components[-1]] = value
+        if not ok:
+            raise Exception('Empty result')
 
     def watch(self, key):
-        """Watch a key in a thread"""
+        watch_id = self.client.add_watch_callback(key, self.on_change)
+        return watch_id
 
-        def watch_key():
-            while not self.stop_watching:
-                try:
-                    result = self.client.watch(key,
-                                               recursive=True,
-                                               timeout=self.watch_timeout)
-                    try:
-                        self.on_change(result.key,
-                                       result.action,
-                                       result.value)
-                    except Exception as e:  # noqa
-                        pass
-                except etcd.EtcdWatchTimedOut as e:  # noqa
-                    pass
+    def watch_prefix(self, key):
+        return self.client.watch_prefix(key)
 
-        if not self.stop_watching:
-            Thread(target=watch_key).start()
+    def cancel(self, watch_id):
+        self.client.cancel_watch(watch_id)
 
-    def add_key(self, key, watch=True):
+    def add_key(self, key, watch=False):
         """Add a key to managed etcd keys and store its data
 
         :param str key: the etcd path
@@ -119,8 +93,8 @@ class ConManEtcd(ConManBase):
 
         When a key is added all its data is stored as a dict
         """
-        etcd_result = self.client.read(key, recursive=True, sorted=True)
-        self._add_key_recursively(self._conf, key, etcd_result)
+        etcd_result = self.client.get_prefix(key, sort_order='ascend')
+        self._add_key_recursively(etcd_result)
         if watch:
             self.watch(key)
 
@@ -134,8 +108,6 @@ class ConManEtcd(ConManBase):
         """
         keys = [key] if key else self._conf.keys()
         for k in keys:
+            if k in self._conf:
+                del self._conf[k]
             self.add_key(k, watch=False)
-
-    def stop_watchers(self):
-        """All watching threads will stop soon"""
-        self.stop_watching = True

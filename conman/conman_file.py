@@ -6,7 +6,7 @@ Supported file formats: Ini,  Json and Yaml
 import os
 import json
 import yaml
-from ConfigParser import SafeConfigParser
+from configparser import SafeConfigParser
 from conman.conman_base import ConManBase
 
 FILE_TYPES = 'ini json yaml'.split()
@@ -82,7 +82,7 @@ class ConManFile(ConManBase):
         if file_type:
             try:
                 return self._process_file(filename, file_type)
-            except:
+            except Exception:
                 # Remove failed file_type from set of file types to try
                 if file_type in file_types:
                     file_types.remove(file_type)
@@ -91,7 +91,7 @@ class ConManFile(ConManBase):
         for file_type in file_types:
             try:
                 return self._process_file(filename, file_type)
-            except:
+            except Exception:
                 pass
 
         raise Exception('Bad config file: ' + filename)

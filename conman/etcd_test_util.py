@@ -1,13 +1,10 @@
 #!/usr/bin/env python
-import os
-import subprocess
-import time
-
 import psutil
 import six
-from etcd import EtcdKeyNotFound
-
+import subprocess
+import time
 from conman.conman_etcd import thrice
+from etcd3.exceptions import Etcd3Exception
 
 
 def start_local_etcd_server():
@@ -18,7 +15,7 @@ def start_local_etcd_server():
     if is_local_etcd_running():
         return
 
-    p = subprocess.Popen('/usr/local/bin/etcd',
+    _ = subprocess.Popen('/usr/local/bin/etcd',
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
     # Wait for etcd process to start
@@ -33,7 +30,7 @@ def is_local_etcd_running():
             if p.name() == 'etcd' and p.status() != 'zombie':
                 etcd = p
                 break
-        except psutil.ZombieProcess as e:
+        except psutil.ZombieProcess:
             pass
 
     if not etcd:
@@ -77,7 +74,7 @@ def set_key(client, key, values):
         if isinstance(value, dict):
             set_key(client, k, value)
         else:
-            client.write(k, value)
+            client.put(k, value)
 
 
 @thrice()
@@ -87,8 +84,8 @@ def delete_key(client, key):
     Ignore non-existing keys
     """
     try:
-        client.delete(key, recursive=True)
-    except EtcdKeyNotFound:
+        client.delete_prefix(key)
+    except Etcd3Exception:
         pass
     except Exception as e:
         # Ignore Raft internal errors that happen here sometimes
