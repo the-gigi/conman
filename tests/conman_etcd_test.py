@@ -14,6 +14,7 @@ from unittest import TestCase
 class ConManEtcdTest(TestCase):
     @classmethod
     def setUpClass(cls):
+        kill_local_etcd_server()
         # Start local etcd server if not running
         start_local_etcd_server()
 
@@ -156,6 +157,7 @@ class ConManEtcdTest(TestCase):
         # Insert a new key to etcd
         self.conman.client.put('watch_prefix_test/a', '1')
         self.conman.client.put('watch_prefix_test/b', '2')
+        time.sleep(1)
         self.conman.client.put('watch_prefix_test', 'stop')
 
         t.join()
@@ -165,4 +167,4 @@ class ConManEtcdTest(TestCase):
             'watch_prefix_test/b: 2',
             'watch_prefix_test: stop'
         ]
-        self.assertEquals(expected, all_events)
+        self.assertEqual(expected, all_events)

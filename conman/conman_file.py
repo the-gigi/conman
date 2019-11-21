@@ -6,7 +6,7 @@ Supported file formats: Ini,  Json and Yaml
 import os
 import json
 import yaml
-from configparser import SafeConfigParser
+from configparser import ConfigParser
 from conman.conman_base import ConManBase
 
 FILE_TYPES = 'ini json yaml'.split()
@@ -116,7 +116,7 @@ class ConManFile(ConManBase):
         process_func(filename)
 
     def _process_ini_file(self, filename):
-        parser = SafeConfigParser()
+        parser = ConfigParser()
         parser.read(filename)
         for section_name in parser.sections():
             self._conf[section_name] = {}
@@ -125,7 +125,9 @@ class ConManFile(ConManBase):
                 section[name] = value
 
     def _process_json_file(self, filename):
-        self._conf.update(json.load(open(filename)))
+        with open(filename) as f:
+            self._conf.update(json.load(f))
 
     def _process_yaml_file(self, filename):
-        self._conf.update(yaml.load(open(filename)))
+        with open(filename) as f:
+            self._conf.update(yaml.full_load(f))

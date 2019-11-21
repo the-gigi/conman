@@ -14,9 +14,9 @@ Conman support YAML, JSON and INI file formats.
 
 Requirements
 ============
-For using etcd and/or running its tests you need to have etcd installed at /usr/local/bin/etcd
+For using etcd and/or running its tests you need to have etcd installed at `/usr/local/bin/etcd`
 
-Check out installation options here: https://github.com/etcd-io/etcd#getting-etcd
+Check out installation options here: `https://github.com/etcd-io/etcd#getting-etcd`
 
 Usage
 =====

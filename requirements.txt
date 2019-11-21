@@ -1,7 +1,6 @@
-psutil==5.5.0
-pyOpenSSL==19.0.0
-etcd3==0.8.1
-PyYAML==4.2b4
-six==1.11.0
-urllib3==1.23
+psutil==5.6.5
+pyOpenSSL==19.1.0
+etcd3==0.10.0
+PyYAML==5.1.2
+urllib3==1.25.7
 

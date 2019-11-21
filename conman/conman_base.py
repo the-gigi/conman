@@ -1,6 +1,7 @@
 
 class ConManBase(dict):
     def __init__(self):
+        dict.__init__(self)
         self._conf = {}
 
     def __getitem__(self, k):
