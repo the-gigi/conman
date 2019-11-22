@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 import psutil
-import six
 import subprocess
 import time
 from conman.conman_etcd import thrice
 from etcd3.exceptions import Etcd3Exception
+
+etcd_process = None
 
 
 def start_local_etcd_server():
@@ -15,12 +16,17 @@ def start_local_etcd_server():
     if is_local_etcd_running():
         return
 
-    _ = subprocess.Popen('/usr/local/bin/etcd',
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
+    global etcd_process
+    etcd_process = subprocess.Popen(
+        '/usr/local/bin/etcd',
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE)
+
     # Wait for etcd process to start
     while not is_local_etcd_running():
         time.sleep(1)
+    # wait a little longer to let etcd warm up
+    time.sleep(2)
 
 
 def is_local_etcd_running():
@@ -40,6 +46,17 @@ def is_local_etcd_running():
 
 
 def kill_local_etcd_server():
+    global etcd_process
+    if etcd_process is not None:
+        etcd_process.stdout.close()
+        etcd_process.stderr.close()
+        etcd_process.kill()
+        try:
+            etcd_process.wait(3)
+        except psutil.TimeoutExpired:
+            etcd_process.terminate()
+        etcd_process = None
+
     if not is_local_etcd_running():
         return
 
@@ -69,7 +86,7 @@ def set_key(client, key, values):
     """
     delete_key(client, key)
     assert isinstance(values, dict)
-    for name, value in six.iteritems(values):
+    for name, value in values.items():
         k = '{0}/{1}'.format(key, name)
         if isinstance(value, dict):
             set_key(client, k, value)
