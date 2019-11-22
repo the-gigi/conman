@@ -5,7 +5,7 @@ and distributed configuration via [etcd](https://coreos.com/etcd/).
 
 If you want to use the distributed option you need to install etcd (duh!).
 
-Conman was tested against etcd 2.2.5.
+Conman was tested against etcd 3.5
 
 Supported File Formats
 ======================
