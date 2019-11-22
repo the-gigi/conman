@@ -1,3 +1,5 @@
+import os
+import sys
 import time
 from collections import defaultdict
 from threading import Thread
@@ -142,16 +144,17 @@ class ConManEtcdTest(TestCase):
         all_events = []
 
         def read_events_in_thread():
-            events, cancel = self.conman.watch_prefix('watch_prefix_test')
-            for event in events:
-                k = event.key.decode()
-                v = event.value.decode()
-                s = f'{k}: {v}'
-                all_events.append(s)
-                if v == 'stop':
-                    cancel()
-
-            print('Done.')
+            with open(os.devnull, 'w') as f:
+                sys.stdout = f
+                sys.stderr = f
+                events, cancel = self.conman.watch_prefix('watch_prefix_test')
+                for event in events:
+                    k = event.key.decode()
+                    v = event.value.decode()
+                    s = f'{k}: {v}'
+                    all_events.append(s)
+                    if v == 'stop':
+                        cancel()
 
         t = Thread(target=read_events_in_thread)
         t.start()
