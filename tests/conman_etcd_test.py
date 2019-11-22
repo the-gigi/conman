@@ -37,9 +37,11 @@ class ConManEtcdTest(TestCase):
         set_key(cli, 'good', self.good_dict)
 
     def tearDown(self):
-        delete_key(self.conman.client, 'good')
-        delete_key(self.conman.client, 'refresh_test')
-        delete_key(self.conman.client, 'watch_test')
+        cli = self.conman.client
+        delete_key(cli, 'good')
+        delete_key(cli, 'refresh_test')
+        delete_key(cli, 'watch_test')
+        cli.close()
 
     def test_initialization(self):
         cli = self.conman.client
