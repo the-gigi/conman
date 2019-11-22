@@ -127,7 +127,7 @@ class ConManEtcdTest(TestCase):
 
             expected = {b'watch_test/b': [('PutEvent', b'3')]}
             actual = dict(change_dict)
-            self.assertEquals(expected, actual)
+            self.assertEqual(expected, actual)
 
             # Refresh again
             self.conman.refresh('watch_test')
