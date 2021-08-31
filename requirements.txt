@@ -2,5 +2,5 @@ psutil==5.6.6
 pyOpenSSL==19.1.0
 etcd3==0.10.0
 PyYAML==5.4
-urllib3==1.25.7
+urllib3>=1.26.5
 
